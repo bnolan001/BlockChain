@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using BlockChain.NET.Library;
 using FluentAssertions;
+using System.Text;
 
 namespace Testing.Unit
 {
@@ -11,29 +12,35 @@ namespace Testing.Unit
         [TestMethod]
         public void CalculateHash()
         {
-            var dataStore = new DataStore<string>();
-            var block = new Block<string>();
+            var dataStore = new DataStore("",
+                0,
+                "0000000000000000000000000000000");
+            var block = new Block();
             block.Data = "test";
-            block.TimeStamp = new DateTime(2015, 2, 14, 3, 22, 13);
+            TimeSpan ts = new DateTime(2015, 2, 14, 3, 22, 13).Subtract(new DateTime(1970, 1, 1));
+            block.Timestamp = Convert.ToUInt32(ts.TotalSeconds);
             var hash = dataStore.CalculateHash(block);
-            hash.Should().Be("0B97B26F341EA6F768640ABDEE6474EC0495C713BE20FC1A923F1692F076B3E0");
+            hash.Should().Be("±Y@\u009dª«\u0004Óf™s¦\u001bù‡\u0015Æ—\\‘3!Ä\u001a\u008f²ÇjT\u0012\u001dZ");
 
-            block = new Block<string>();
+            block = new Block();
             block.Data = "test2";
-            block.TimeStamp = new DateTime(2015, 2, 14, 3, 22, 13);
+            ts = new DateTime(2015, 2, 14, 3, 22, 13).Subtract(new DateTime(1970, 1, 1));
+            block.Timestamp = Convert.ToUInt32(ts.TotalSeconds);
             hash = dataStore.CalculateHash(block);
-            hash.Should().Be("22140614524825C3C06A911761CB897A35C97798A9F4263ACC8EE35D34508598");
+            hash.Should().Be("{ì\r\u0090€R Ò(úQ¿Ÿ\t\a¦\u0090ˆÆ$j\0??¦j’ú2\u0012‚x");
         }
 
         [TestMethod]
         public void TryAdd()
         {
-            var dataStore = new DataStore<string>();
-            var block = new Block<string>();
+            var dataStore = new DataStore("",
+                0,
+                "0000000000000000000000000000000");
+            var block = new Block();
             block.Data = "test";
             dataStore.TryAdd(block);
 
-            block = new Block<string>()
+            block = new Block()
             {
                 Data = "test2block"
             };
@@ -41,6 +48,7 @@ namespace Testing.Unit
             dataStore.TryAdd(block);
 
             dataStore.ChainLinks.Should().NotBeNullOrEmpty();
+            dataStore.ChainLinks.Count.Should().Be(3);
         }
     }
 }

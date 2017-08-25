@@ -3,56 +3,53 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Json;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace BlockChain.NET.Library
 {
-    public class DataStore<T>
+    public class DataStore
     {
-        private List<IBlock<T>> _lisChainLinks;
-        private Dictionary<string, IBlock<T>> _dicChainLinksByBlockHash;
+        private List<Block> _lisChainLinks;
+        private Dictionary<string, Block> _dicChainLinksByBlockHash;
 
         /// <summary>
         /// Returns a readonly version of the chain
         /// </summary>
-        public ReadOnlyCollection<IBlock<T>> ChainLinks
+        public ReadOnlyCollection<Block> ChainLinks
         {
             get { return _lisChainLinks.AsReadOnly(); }
         }
 
         /// <summary>
-        /// Default constructor
+        /// Constructor which initializes the chain with a base block object
         /// </summary>
-        public DataStore()
+        /// <param name="data">String representation of the data</param>
+        /// <param name="timestamp">Number of seconds since Unix Epoch that this block was created</param>
+        /// <param name="parenthash">Hash value of the parent block</param>
+        public DataStore(string data, UInt32 timestamp, string parenthash)
         {
-            _lisChainLinks = new List<IBlock<T>>();
-            _dicChainLinksByBlockHash = new Dictionary<string, IBlock<T>>();
+            _dicChainLinksByBlockHash = new Dictionary<string, Block>();
+            _lisChainLinks = new List<Block>();
+            TryAdd(data, timestamp, parenthash);
         }
 
         /// <summary>
         /// Takes the Data from the block object, creates a new link block
         /// and adds it to the chain
         /// </summary>
-        /// <param name="block"></param>
+        /// <param name="block">New block to add to the chain</param>
         /// <returns>False if the block could not be added due to a hash collision</returns>
-        public bool TryAdd(IBlock<T> block)
+        public bool TryAdd(Block block)
         {
             bool success = false;
             int linkCount = _lisChainLinks.Count;
             ulong nextIndex = linkCount == 0 ?
                 0 : _lisChainLinks[linkCount - 1].Index + 1;
-            string parentHash = linkCount == 0 ?
-                "0000000000000000000000000000000000000000000000000000000000000000" :
-                _lisChainLinks[linkCount - 1].ThisHash;
 
             // Deep copy the object and set all fields
             var link = ObjectExtensions.Copy(block);
             link.Index = nextIndex;
-            link.ParentHash = parentHash;
-            link.TimeStamp = DateTime.UtcNow;
             link.ThisHash = CalculateHash(link);
 
             // If the hash already exists then don't add it
@@ -75,12 +72,16 @@ namespace BlockChain.NET.Library
         /// <summary>
         /// Takes the Data, creates a new link block and adds it to the chain
         /// </summary>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        public bool TryAdd(T data)
+        /// <param name="data">String representation of the data</param>
+        /// <param name="timestamp">Number of seconds since Unix Epoch that this block was created</param>
+        /// <param name="parenthash">Hash value of the parent block</param>
+        /// <returns>False if the block could not be added due to a hash collision</returns>
+        public bool TryAdd(string data, UInt32 timestamp, string parenthash)
         {
-            var block = new Block<T>()
+            var block = new Block()
             {
+                Timestamp = timestamp,
+                ParentHash = parenthash,
                 Data = data
             };
 
@@ -90,10 +91,10 @@ namespace BlockChain.NET.Library
         /// <summary>
         /// Retrieves the block associated with the hash value
         /// </summary>
-        /// <param name="blockHash"></param>
-        /// <param name="link"></param>
-        /// <returns></returns>
-        public bool TryGet(string blockHash, out IBlock<T> link)
+        /// <param name="blockHash">Unique hash of the block to find</param>
+        /// <param name="link">Copy of the block object</param>
+        /// <returns>False if it could not find the block hash</returns>
+        public bool TryGet(string blockHash, out Block link)
         {
             bool success = false;
             link = null;
@@ -109,9 +110,9 @@ namespace BlockChain.NET.Library
         /// <summary>
         /// Calculates the SHA 256bit hash of the block
         /// </summary>
-        /// <param name="block"></param>
-        /// <returns></returns>
-        public string CalculateHash(IBlock<T> block)
+        /// <param name="block">Object to generate a hash of</param>
+        /// <returns>String representation of the SHA256 bit hash for the block</returns>
+        public string CalculateHash(Block block)
         {
             var json = JsonConvert.SerializeObject(block);
             byte[] hash = null;
@@ -122,7 +123,8 @@ namespace BlockChain.NET.Library
                 // Compute the hash of the fileStream.
                 hash = mySHA256.ComputeHash(memoryStream);
             }
-            return BitConverter.ToString(hash).Replace("-", string.Empty);
+            var hashString = Encoding.Default.GetString(hash);
+            return hashString;
         }
     }
 }

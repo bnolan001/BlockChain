@@ -1,36 +1,62 @@
 ﻿using System;
-using System.Runtime.Serialization;
 
 namespace BlockChain.NET.Library
 {
     /// <summary>
-    /// Generic object to represent a link in the data,
-    /// should only be used when Data types already contain
-    /// ToString() methods, like StringBuilder, int, double, etc
-    /// that convert the value directly to a useable string object
+    /// Generic object to represent a block of data in the chain
     /// </summary>
-    /// <typeparam name="T">Type of the data being stored</typeparam>
-    [DataContract]
-    public class Block<T> : IBlock<T>
+    public class Block
     {
-        [DataMember]
-        public ulong Index { get; set; }
-
-        [DataMember]
+        /// <summary>
+        /// A reference to the hash of the parent block
+        /// </summary>
         public string ParentHash { get; set; }
 
-        [DataMember]
-        public DateTime TimeStamp { get; set; }
-
-        [DataMember]
-        public T Data { get; set; }
-
-        [DataMember]
+        /// <summary>
+        /// A hash of this block
+        /// </summary>
         public string ThisHash { get; set; }
 
-        public string DataToString()
+        /// <summary>
+        /// The time this block was created(seconds from Unix Epoch)
+        /// </summary>
+        public UInt32 Timestamp { get; set; }
+
+        /// <summary>
+        /// A counter used for the proof-of-work algorithm
+        /// </summary>
+        public UInt32 Nonce { get; set; }
+
+        /// <summary>
+        /// Index of the block with respect to the rest of the chain
+        /// </summary>
+        public UInt64 Index { get; set; }
+
+        /// <summary>
+        /// String version of the data being stored
+        /// </summary>
+        public string Data { get; set; }
+
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        public Block()
+        { }
+
+        /// <summary>
+        /// Constructor that initializes core properties
+        /// </summary>
+        /// <param name="data">String representation of the data</param>
+        /// <param name="timestamp">Number of seconds since Unix Epoch that this block was created</param>
+        /// <param name="parenthash">Hash value of the parent block</param>
+        public Block(string data,
+            UInt32 timestamp,
+            string parenthash)
+            : this()
         {
-            return Data?.ToString();
+            Timestamp = timestamp;
+            ParentHash = parenthash;
+            Data = data;
         }
     }
 }

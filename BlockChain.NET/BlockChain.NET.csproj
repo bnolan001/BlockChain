@@ -49,7 +49,6 @@
     <Compile Include="Extensions\ObjectExtensions.cs" />
     <Compile Include="Library\Block.cs" />
     <Compile Include="Library\DataStore.cs" />
-    <Compile Include="Library\IBlock.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -9,11 +9,13 @@ namespace BlockChain.NET
 {
     public class BlockChain<T>
     {
-        private DataStore<T> _datStore;
+        private DataStore _datStore;
 
         public BlockChain()
         {
-            _datStore = new DataStore<T>();
+            _datStore = new DataStore("",
+                0,
+                "0000000000000000000000000000000");
         }
     }
 }
