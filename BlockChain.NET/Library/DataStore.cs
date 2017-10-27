@@ -27,11 +27,14 @@ namespace BlockChain.NET.Library
         /// <param name="data">String representation of the data</param>
         /// <param name="timestamp">Number of seconds since Unix Epoch that this block was created</param>
         /// <param name="parenthash">Hash value of the parent block</param>
-        public DataStore(string data, UInt32 timestamp, string parenthash)
+        public DataStore(string data,
+            UInt32 timestamp,
+            string parenthash,
+            int numLeadingZeros)
         {
             _dicChainLinksByBlockHash = new Dictionary<string, Block>();
             _lisChainLinks = new List<Block>();
-            TryAdd(data, timestamp, parenthash);
+            TryAdd(data, timestamp, parenthash, numLeadingZeros);
         }
 
         /// <summary>
@@ -40,7 +43,8 @@ namespace BlockChain.NET.Library
         /// </summary>
         /// <param name="block">New block to add to the chain</param>
         /// <returns>False if the block could not be added due to a hash collision</returns>
-        public bool TryAdd(Block block)
+        public bool TryAdd(Block block,
+            int numLeadingZeros)
         {
             bool success = false;
             int linkCount = _lisChainLinks.Count;
@@ -50,7 +54,7 @@ namespace BlockChain.NET.Library
             // Deep copy the object and set all fields
             var link = ObjectExtensions.Copy(block);
             link.Index = nextIndex;
-            link.ThisHash = CalculateHash(link);
+            CalculateHash(link, numLeadingZeros);
 
             // If the hash already exists then don't add it
             if (!_dicChainLinksByBlockHash.ContainsKey(link.ThisHash))
@@ -76,7 +80,10 @@ namespace BlockChain.NET.Library
         /// <param name="timestamp">Number of seconds since Unix Epoch that this block was created</param>
         /// <param name="parenthash">Hash value of the parent block</param>
         /// <returns>False if the block could not be added due to a hash collision</returns>
-        public bool TryAdd(string data, UInt32 timestamp, string parenthash)
+        public bool TryAdd(string data,
+            UInt32 timestamp,
+            string parenthash,
+            int numLeadingZeros)
         {
             var block = new Block()
             {
@@ -85,7 +92,7 @@ namespace BlockChain.NET.Library
                 Data = data
             };
 
-            return TryAdd(block);
+            return TryAdd(block, numLeadingZeros);
         }
 
         /// <summary>
@@ -112,19 +119,48 @@ namespace BlockChain.NET.Library
         /// </summary>
         /// <param name="block">Object to generate a hash of</param>
         /// <returns>String representation of the SHA256 bit hash for the block</returns>
-        public string CalculateHash(Block block)
+        public void CalculateHash(Block block,
+            int numLeadingZeros)
         {
-            var json = JsonConvert.SerializeObject(block);
-            byte[] hash = null;
-            // Initialize a SHA256 hash object.
-            SHA256 mySHA256 = SHA256Managed.Create();
-            using (MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+            StringBuilder sbZeroes = new StringBuilder("");
+            for (int ct = 0; ct < numLeadingZeros; ct++)
             {
-                // Compute the hash of the fileStream.
-                hash = mySHA256.ComputeHash(memoryStream);
+                sbZeroes.Append("0");
             }
-            var hashString = Encoding.Default.GetString(hash);
-            return hashString;
+            var zeroes = sbZeroes.ToString();
+            uint nonce = 0;
+            var hashString = string.Empty;
+
+            do
+            {
+                block.Nonce = nonce;
+                var json = JsonConvert.SerializeObject(block);
+                byte[] hash = null;
+                // Initialize a SHA256 hash object.
+                SHA256 mySHA256 = SHA256Managed.Create();
+                using (MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+                {
+                    // Compute the hash of the fileStream.
+                    hash = mySHA256.ComputeHash(memoryStream);
+                }
+                hashString = ByteArrayToString(hash);
+                nonce++;
+            } while (!hashString.StartsWith(zeroes));
+
+            block.ThisHash = hashString;
+        }
+
+        /// <summary>
+        /// Converts a byte array to a hexadecimal string
+        /// </summary>
+        /// <param name="byteArray">Non-null array of bytes</param>
+        /// <returns>String representation of the array in hexadecimal</returns>
+        public string ByteArrayToString(byte[] byteArray)
+        {
+            StringBuilder sbHex = new StringBuilder(byteArray.Length * 2);
+            foreach (byte b in byteArray)
+                sbHex.AppendFormat("{0:x2}", b);
+            return sbHex.ToString();
         }
     }
 }
