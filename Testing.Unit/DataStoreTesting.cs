@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using BlockChain.NET.Library;
 using FluentAssertions;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace Testing.Unit
 {
@@ -18,8 +19,8 @@ namespace Testing.Unit
                 0);
             var block = new Block();
             block.Data = "test";
-            TimeSpan ts = new DateTime(2015, 2, 14, 3, 22, 13)
-                .Subtract(new DateTime(1970, 1, 1));
+            TimeSpan ts = new DateTimeOffset(2015, 2, 14, 3, 22, 13, TimeSpan.Zero)
+                .Subtract(new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero));
             block.Timestamp = Convert.ToUInt32(ts.TotalSeconds);
             dataStore.CalculateHash(block,
                 0);
@@ -27,7 +28,8 @@ namespace Testing.Unit
 
             block = new Block();
             block.Data = "test2";
-            ts = new DateTime(2015, 2, 14, 3, 22, 13).Subtract(new DateTime(1970, 1, 1));
+            ts = new DateTimeOffset(2015, 2, 14, 3, 22, 13, TimeSpan.Zero)
+                .Subtract(new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero));
             block.Timestamp = Convert.ToUInt32(ts.TotalSeconds);
             dataStore.CalculateHash(block,
                 0);
@@ -35,13 +37,42 @@ namespace Testing.Unit
 
             block = new Block();
             block.Data = "test";
-            ts = new DateTime(2015, 2, 14, 3, 22, 13)
-                .Subtract(new DateTime(1970, 1, 1));
+            ts = new DateTimeOffset(2015, 2, 14, 3, 22, 13, TimeSpan.Zero)
+                .Subtract(new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero));
             block.Timestamp = Convert.ToUInt32(ts.TotalSeconds);
             dataStore.CalculateHash(block,
                 4);
             block.ThisHash.Should().Be("000068a4fb51099a1f6132557f3ee053770afba130e7728cae82552815fb473e");
             block.Nonce.Should().Be(43300);
+
+            block = new Block();
+            block.Data = JsonConvert.SerializeObject(new
+            {
+                Transactions = new[]
+                {
+                    new {
+                        Sender = "a0d4efb34",
+                        Receiver = "de345acf2",
+                        Currency = "IOTA",
+                        Amount = 39201456.3900012,
+                        Date = "2017-07-22T18:32:28.8976Z"
+                    },
+                    new {
+                        Sender = "ef38717a76",
+                        Receiver = "a00d938fcd",
+                        Currency = "Ethereum",
+                        Amount = 2.03,
+                        Date = "2017-07-22T18:32:29.1094Z"
+                    }
+                }
+            });
+            ts = new DateTimeOffset(2017, 7, 22, 18, 32, 30, TimeSpan.Zero)
+                .Subtract(new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero));
+            block.Timestamp = Convert.ToUInt32(ts.TotalSeconds);
+            dataStore.CalculateHash(block,
+                4);
+            block.ThisHash.Should().Be("00004be94f3fb992314c75e6a9e6a9d49650fee9163082c6aa1b51c04f990191");
+            block.Nonce.Should().Be(21254);
         }
 
         [TestMethod]
@@ -66,6 +97,40 @@ namespace Testing.Unit
 
             dataStore.ChainLinks.Should().NotBeNullOrEmpty();
             dataStore.ChainLinks.Count.Should().Be(3);
+
+            dataStore.ChainLinks[0].Data.Should().Be("");
+            dataStore.ChainLinks[1].Data.Should().Be("test");
+            dataStore.ChainLinks[2].Data.Should().Be("test2block");
+        }
+
+        [TestMethod]
+        public void VerifyRreadOnly()
+        {
+            var dataStore = new DataStore("",
+                0,
+                "0000000000000000000000000000000",
+                0);
+            var block = new Block();
+            block.Data = "test";
+            dataStore.TryAdd(block,
+                0);
+
+            block = new Block()
+            {
+                Data = "test2block"
+            };
+
+            dataStore.TryAdd(block,
+                0);
+
+            // Try to set the data values
+            dataStore.ChainLinks[0].Data = "invalid";
+            dataStore.ChainLinks[1].Data = "not editable";
+            dataStore.ChainLinks[2].Data = "leave it alone";
+            // Verify the values are still the original ones
+            dataStore.ChainLinks[0].Data.Should().Be("");
+            dataStore.ChainLinks[1].Data.Should().Be("test");
+            dataStore.ChainLinks[2].Data.Should().Be("test2block");
         }
     }
 }

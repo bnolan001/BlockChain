@@ -18,7 +18,7 @@ namespace BlockChain.NET.Library
         /// </summary>
         public ReadOnlyCollection<Block> ChainLinks
         {
-            get { return _lisChainLinks.AsReadOnly(); }
+            get { return ObjectExtensions.Copy(_lisChainLinks).AsReadOnly(); }
         }
 
         /// <summary>
