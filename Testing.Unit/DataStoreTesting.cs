@@ -1,16 +1,13 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using BlockChain.NET.Library;
 using FluentAssertions;
-using System.Text;
 using Newtonsoft.Json;
 
 namespace Testing.Unit
 {
-    [TestClass]
+    [TestFixture]
     public class DataStoreTesting
     {
-        [TestMethod]
+        [Test]
         public void CalculateHash()
         {
             var dataStore = new DataStore("",
@@ -75,7 +72,7 @@ namespace Testing.Unit
             block.Nonce.Should().Be(21254);
         }
 
-        [TestMethod]
+        [Test]
         public void TryAdd()
         {
             var dataStore = new DataStore("",
@@ -103,7 +100,7 @@ namespace Testing.Unit
             dataStore.ChainLinks[2].Data.Should().Be("test2block");
         }
 
-        [TestMethod]
+        [Test]
         public void VerifyRreadOnly()
         {
             var dataStore = new DataStore("",
